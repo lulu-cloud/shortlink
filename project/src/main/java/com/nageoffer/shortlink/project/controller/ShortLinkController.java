@@ -62,7 +62,7 @@ public class ShortLinkController {
     }
 
     /**
-     * 创建短链接
+     * 创建短链接 [x]
      * 适用场景：
      * 高并发场景：适用于需要进行限流和熔断保护的高并发场景。
      * 服务保护：通过 Sentinel 进行服务保护，防止系统过载。
@@ -78,7 +78,7 @@ public class ShortLinkController {
     }
 
     /**
-     * 通过分布式锁创建短链接
+     * 通过分布式锁创建短链接 [x]
      * 适用场景
      * 高并发场景：适用于需要确保**唯一性**和一致性的高并发场景。
      * 防止重复创建：通过分布式锁，防止重复创建相同的短链接。
@@ -89,7 +89,7 @@ public class ShortLinkController {
     }
 
     /**
-     * 批量创建短链接
+     * 批量创建短链接 [x]
      */
     @PostMapping("/api/short-link/v1/create/batch")
     public Result<ShortLinkBatchCreateRespDTO> batchCreateShortLink(@RequestBody ShortLinkBatchCreateReqDTO requestParam) {
@@ -97,7 +97,7 @@ public class ShortLinkController {
     }
 
     /**
-     * 修改短链接
+     * 修改短链接 [x]
      */
     @PostMapping("/api/short-link/v1/update")
     public Result<Void> updateShortLink(@RequestBody ShortLinkUpdateReqDTO requestParam) {
