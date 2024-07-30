@@ -84,16 +84,37 @@ public class ShortLinkStatsServiceImpl implements ShortLinkStatsService {
     private final LinkDeviceStatsMapper linkDeviceStatsMapper;
     private final LinkNetworkStatsMapper linkNetworkStatsMapper;
 
+    /**
+     * 统计数据：该方法主要用于获取短链接的统计数据，包括：
+     *
+     * PV（页面浏览量）
+     * UV（独立访客数）
+     * UIP（独立IP数）
+     * 每日访问详情
+     * 地区访问详情
+     * 小时访问详情
+     * 高频访问IP详情
+     * 一周访问详情
+     * 浏览器访问详情
+     * 操作系统访问详情
+     * 访客类型详情
+     * 设备类型详情
+     * 网络类型详情
+     * @param requestParam 获取短链接监控数据入参
+     * @return
+     */
     @Override
     public ShortLinkStatsRespDTO oneShortLinkStats(ShortLinkStatsReqDTO requestParam) {
+        // 验证用户权限
         checkGroupBelongToUser(requestParam.getGid());
         List<LinkAccessStatsDO> listStatsByShortLink = linkAccessStatsMapper.listStatsByShortLink(requestParam);
         if (CollUtil.isEmpty(listStatsByShortLink)) {
             return null;
         }
         // 基础访问数据
+        // 获取PV、UV、UIP数据：从数据库中查询短链接的PV（页面浏览量）、UV（独立访客数）和UIP（独立IP数）数据。
         LinkAccessStatsDO pvUvUidStatsByShortLink = linkAccessLogsMapper.findPvUvUidStatsByShortLink(requestParam);
-        // 基础访问详情
+        // 基础访问详情 遍历指定日期范围内的每一天，构建每日的访问统计数据。如果某一天没有数据，填充默认值（PV、UV、UIP均为0）。
         List<ShortLinkStatsAccessDailyRespDTO> daily = new ArrayList<>();
         List<String> rangeDates = DateUtil.rangeToList(DateUtil.parse(requestParam.getStartDate()), DateUtil.parse(requestParam.getEndDate()), DateField.DAY_OF_MONTH).stream()
                 .map(DateUtil::formatDate)
@@ -118,7 +139,7 @@ public class ShortLinkStatsServiceImpl implements ShortLinkStatsService {
                             .build();
                     daily.add(accessDailyRespDTO);
                 }));
-        // 地区访问详情（仅国内）
+        // 地区访问详情（仅国内）从数据库中查询短链接的地区访问统计数据，计算每个地区的访问量占比，并构建响应对象。
         List<ShortLinkStatsLocaleCNRespDTO> localeCnStats = new ArrayList<>();
         List<LinkLocaleStatsDO> listedLocaleByShortLink = linkLocaleStatsMapper.listLocaleByShortLink(requestParam);
         int localeCnSum = listedLocaleByShortLink.stream()
@@ -134,7 +155,7 @@ public class ShortLinkStatsServiceImpl implements ShortLinkStatsService {
                     .build();
             localeCnStats.add(localeCNRespDTO);
         });
-        // 小时访问详情
+        // 小时访问详情 遍历一天中的每个小时（0到23），从数据库查询结果中找到对应小时的访问量（PV），如果没有数据则填充0。将每小时的访问量添加到 hourStats 列表中。
         List<Integer> hourStats = new ArrayList<>();
         List<LinkAccessStatsDO> listHourStatsByShortLink = linkAccessStatsMapper.listHourStatsByShortLink(requestParam);
         for (int i = 0; i < 24; i++) {
@@ -146,7 +167,7 @@ public class ShortLinkStatsServiceImpl implements ShortLinkStatsService {
                     .orElse(0);
             hourStats.add(hourCnt);
         }
-        // 高频访问IP详情
+        // 高频访问IP详情 从数据库中查询短链接的高频访问IP数据，构建响应对象并添加到 topIpStats 列表中。
         List<ShortLinkStatsTopIpRespDTO> topIpStats = new ArrayList<>();
         List<HashMap<String, Object>> listTopIpByShortLink = linkAccessLogsMapper.listTopIpByShortLink(requestParam);
         listTopIpByShortLink.forEach(each -> {
@@ -156,7 +177,7 @@ public class ShortLinkStatsServiceImpl implements ShortLinkStatsService {
                     .build();
             topIpStats.add(statsTopIpRespDTO);
         });
-        // 一周访问详情
+        // 一周访问详情 遍历一周中的每一天（1到7），从数据库查询结果中找到对应天的访问量（PV），如果没有数据则填充0。将每一天的访问量添加到 weekdayStats 列表中。
         List<Integer> weekdayStats = new ArrayList<>();
         List<LinkAccessStatsDO> listWeekdayStatsByShortLink = linkAccessStatsMapper.listWeekdayStatsByShortLink(requestParam);
         for (int i = 1; i < 8; i++) {
@@ -445,6 +466,14 @@ public class ShortLinkStatsServiceImpl implements ShortLinkStatsService {
                 .build();
     }
 
+    /**
+     * 访问记录：该方法主要用于获取短链接的访问记录详情，包括：
+     *
+     * 每次访问的具体信息（如访问时间、用户信息等）
+     * 用户类型（新访客或旧访客）
+     * @param requestParam 获取短链接监控访问记录数据入参
+     * @return
+     */
     @Override
     public IPage<ShortLinkStatsAccessRecordRespDTO> shortLinkStatsAccessRecord(ShortLinkStatsAccessRecordReqDTO requestParam) {
         checkGroupBelongToUser(requestParam.getGid());
@@ -458,9 +487,11 @@ public class ShortLinkStatsServiceImpl implements ShortLinkStatsService {
             return new Page<>();
         }
         IPage<ShortLinkStatsAccessRecordRespDTO> actualResult = linkAccessLogsDOIPage.convert(each -> BeanUtil.toBean(each, ShortLinkStatsAccessRecordRespDTO.class));
+        // 获取用户访问记录列表
         List<String> userAccessLogsList = actualResult.getRecords().stream()
                 .map(ShortLinkStatsAccessRecordRespDTO::getUser)
                 .toList();
+        // 查询用户类型
         List<Map<String, Object>> uvTypeList = linkAccessLogsMapper.selectUvTypeByUsers(
                 requestParam.getGid(),
                 requestParam.getFullShortUrl(),
@@ -469,6 +500,7 @@ public class ShortLinkStatsServiceImpl implements ShortLinkStatsService {
                 requestParam.getEndDate(),
                 userAccessLogsList
         );
+        // 设置用户类型 遍历查询结果，为每个访问记录设置用户类型。如果找不到对应的用户类型，默认设置为“旧访客”。
         actualResult.getRecords().forEach(each -> {
             String uvType = uvTypeList.stream()
                     .filter(item -> Objects.equals(each.getUser(), item.get("user")))
