@@ -32,12 +32,18 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class MessageQueueIdempotentHandler {
 
+    // @RequiredArgsConstructor 它会自动生成一个包含所有 final 字段的构造函数。因此这里是构造器注入
     private final StringRedisTemplate stringRedisTemplate;
 
     private static final String IDEMPOTENT_KEY_PREFIX = "short-link:idempotent:";
 
     /**
      * 判断当前消息是否消费过
+     *
+     * isMessageBeingConsumed：判断当前消息是否已经被消费过。
+     * 参数：messageId 消息的唯一标识。
+     * 逻辑：使用 setIfAbsent 方法尝试设置一个键，如果键不存在则设置成功并返回 true，否则返回 false。这里设置的值为 "0"，过期时间为 2 分钟。
+     * 返回值：如果返回 false，表示消息已经被消费过；否则表示消息未被消费。
      *
      * @param messageId 消息唯一标识
      * @return 消息是否消费过
@@ -49,6 +55,10 @@ public class MessageQueueIdempotentHandler {
 
     /**
      * 判断消息消费流程是否执行完成
+     *
+     * 参数：messageId 消息的唯一标识。
+     * 逻辑：获取键的值并判断是否等于 "1"。
+     * 返回值：如果值为 "1"，表示消息处理完成；否则表示未完成。
      *
      * @param messageId 消息唯一标识
      * @return 消息是否执行完成
