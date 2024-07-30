@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * URL 标题控制层
- * 公众号：马丁玩编程，回复：加群，添加马哥微信（备注：link）获取项目资料
+
  */
 @RestController
 @RequiredArgsConstructor
@@ -36,7 +36,7 @@ public class UrlTitleController {
     private final UrlTitleService urlTitleService;
 
     /**
-     * 根据 URL 获取对应网站的标题
+     * 根据 URL 获取对应网站的标题 [x]
      */
     @GetMapping("/api/short-link/v1/title")
     public Result<String> getTitleByUrl(@RequestParam("url") String url) {
