@@ -123,6 +123,12 @@ public class ShortLinkStatsSaveConsumer implements StreamListener<String, MapRec
 
     public void actualSaveShortLinkStats(ShortLinkStatsRecordDTO statsRecord) {
         String fullShortUrl = statsRecord.getFullShortUrl();
+        /**
+         * TODO : 这里没有弄明白
+         * 读锁的效果在于，它允许多个线程同时获得读锁并读取数据，但在此期间，
+         * 如果有任何线程尝试获得写锁以修改数据，它必须等待所有持有读锁的线程释放锁后才能执行。
+         * 这样可以确保在读取数据的过程中，数据不会被意外修改。
+         */
         RReadWriteLock readWriteLock = redissonClient.getReadWriteLock(String.format(LOCK_GID_UPDATE_KEY, fullShortUrl));
         RLock rLock = readWriteLock.readLock();
         rLock.lock();
