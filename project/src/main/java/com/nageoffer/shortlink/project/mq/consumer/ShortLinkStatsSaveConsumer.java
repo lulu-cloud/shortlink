@@ -97,17 +97,20 @@ public class ShortLinkStatsSaveConsumer implements StreamListener<String, MapRec
     public void onMessage(MapRecord<String, String, String> message) {
         String stream = message.getStream();
         RecordId id = message.getId();
+        // 如果key不存在， 代表没有被消费过， 设置为“0"， 否则不干任何事情
         if (messageQueueIdempotentHandler.isMessageBeingConsumed(id.toString())) {
-            // 判断当前的这个消息流程是否执行完成
+            // 判断当前的这个消息流程是否执行完成 看看值是否为”1“
             if (messageQueueIdempotentHandler.isAccomplish(id.toString())) {
                 return;
             }
+            // 这里就代表被消费过， 但是还没有结束
             throw new ServiceException("消息未完成流程，需要消息队列重试");
         }
         try {
             Map<String, String> producerMap = message.getValue();
             ShortLinkStatsRecordDTO statsRecord = JSON.parseObject(producerMap.get("statsRecord"), ShortLinkStatsRecordDTO.class);
             actualSaveShortLinkStats(statsRecord);
+            // 消费成功， 删除消息。确保每个消息只被消费一次，避免重复消费的问题
             stringRedisTemplate.opsForStream().delete(Objects.requireNonNull(stream), id.getValue());
         } catch (Throwable ex) {
             // 某某某情况宕机了

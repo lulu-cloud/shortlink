@@ -44,9 +44,10 @@ public class MessageQueueIdempotentHandler {
      * 参数：messageId 消息的唯一标识。
      * 逻辑：使用 setIfAbsent 方法尝试设置一个键，如果键不存在则设置成功并返回 true，否则返回 false。这里设置的值为 "0"，过期时间为 2 分钟。
      * 返回值：如果返回 false，表示消息已经被消费过；否则表示消息未被消费。
-     *
+     * 如果在redis里面不存在， 键的值设置为0， 未被消费过， 返回true，  如果已经存在， 不会改变， 消费过
      * @param messageId 消息唯一标识
-     * @return 消息是否消费过
+     * @return 消息是否消费过  使用 Redis 的 setIfAbsent 操作来尝试设置一个键值对。如果键不存在（即消息未被消费过），则设置成功并返回 true；如果键已存在（即消息已被消费过），则不改变键值并返回 false
+     * 但是最终包括了一个Boolean.FALSE.equals判定， 也就是说第一次进来， 会设置为”0“， 但是返回false，
      */
     public boolean isMessageBeingConsumed(String messageId) {
         String key = IDEMPOTENT_KEY_PREFIX + messageId;
